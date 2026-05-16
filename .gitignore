@@ -1,0 +1,37 @@
+# Gradle
+.gradle/
+build/
+!**/src/**/build/
+!**/src/**/build/**
+!**/src/**/build/tmp/
+!**/src/**/build/classes/
+!**/src/**/build/generated/
+!**/src/**/build/libs/
+!**/src/**/build/reports/
+!**/src/**/build/test-results/
+
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker/Infra
+*.env
+.env.local
+infra/keycloak/data/
+infra/postgres/data/
+infra/kafka/data/
+infra/redis/data/
+
+# Logs/Traces
+*.log
+logs/
+traces/
