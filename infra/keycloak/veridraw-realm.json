@@ -1,0 +1,86 @@
+{
+  "id": "veridraw",
+  "realm": "veridraw",
+  "enabled": true,
+  "accessTokenLifespan": 3600,
+  "accessCodeLifespan": 600,
+  "users": [
+    {
+      "id": "demo-user-id",
+      "username": "demo-user",
+      "enabled": true,
+      "email": "demo-user@veridraw.local",
+      "firstName": "Demo",
+      "lastName": "User",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["ROLE_USER"],
+      "clientRoles": {}
+    },
+    {
+      "id": "demo-admin-id",
+      "username": "demo-admin",
+      "enabled": true,
+      "email": "demo-admin@veridraw.local",
+      "firstName": "Demo",
+      "lastName": "Admin",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["ROLE_ADMIN", "ROLE_USER"],
+      "clientRoles": {}
+    }
+  ],
+  "roles": {
+    "realm": [
+      {
+        "name": "ROLE_USER",
+        "description": "Standard user role"
+      },
+      {
+        "name": "ROLE_ADMIN",
+        "description": "Administrator role"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "id": "veridraw-api-client",
+      "clientId": "veridraw-api",
+      "name": "VeriDraw API Client",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "veridraw-api-secret-key-2026",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "redirectUris": ["http://localhost:*", "https://localhost:*"],
+      "webOrigins": ["+"],
+      "protocolMappers": [
+        {
+          "name": "realm-roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "access.token.claim": "true",
+            "claim.name": "roles",
+            "jsonType.label": "String",
+            "multivalued": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "defaultDefaultClientScopes": ["role_list", "profile", "email", "roles", "web-origins"],
+  "defaultOptionalClientScopes": ["offline_access", "address", "phone", "microprofile-jwt"]
+}
