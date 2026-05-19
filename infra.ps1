@@ -12,6 +12,7 @@ $ComposeFile = "docker-compose.infra.yml"
 $Green = "Green"
 $Yellow = "Yellow"
 $Red = "Red"
+$Cyan = "Cyan"
 
 function Write-Colored {
     param([string]$Text, [string]$Color)
@@ -22,10 +23,10 @@ function Start-Infra {
     Write-Colored "Starting VeriDraw infrastructure..." $Yellow
     docker compose -f $ComposeFile up -d
 
-    Write-Colored "⏳ Waiting for services to be ready..." $Yellow
+    Write-Colored "Waiting for services to be ready..." $Yellow
     Start-Sleep -Seconds 10
 
-    Write-Colored "✓ Infrastructure started!" $Green
+    Write-Colored "Infrastructure started!" $Green
     Write-Host ""
     Write-Host "Services:" -ForegroundColor Cyan
     Write-Host "  • PostgreSQL:   localhost:5432 (veridraw/veridraw_password)"
@@ -60,7 +61,7 @@ function Show-Status {
 }
 
 function Get-DemoToken {
-    Write-Colored "Requesting JWT token for demo-user..." $Yellow
+    Write-Host "Requesting JWT token for demo-user..." -ForegroundColor Yellow
 
     try {
         $response = Invoke-RestMethod -Uri "http://localhost:8080/realms/veridraw/protocol/openid-connect/token" `
@@ -74,19 +75,11 @@ function Get-DemoToken {
             } `
             -ContentType "application/x-www-form-urlencoded"
 
-        Write-Host ""
-        Write-Colored "Access Token:" $Green
-        Write-Host $response.access_token
-        Write-Host ""
-        Write-Host "Usage in Authorization header:" -ForegroundColor Cyan
-        Write-Host "  Authorization: Bearer $($response.access_token)"
-        Write-Host ""
-        Write-Host "Token expires in: $($response.expires_in) seconds" -ForegroundColor Yellow
+        Write-Output $response.access_token
     }
     catch {
-        Write-Colored "Failed to get token. Is Keycloak running?" $Red
-        Write-Host "Run: .\infra.ps1 up"
-        Write-Host "Error: $_"
+        Write-Host "Failed to get token: $_" -ForegroundColor Red
+        return $null
     }
 }
 

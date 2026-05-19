@@ -27,7 +27,7 @@ jobs:
               run: chmod +x gradlew
 
             - name: Build & Run Unit Tests
-              run: ./gradlew clean build -x bootJar -x test -x spotlessCheck --no-daemon
+              run: ./gradlew clean build -x test --no-daemon
 
             - name: Upload Test Reports
               if: always()

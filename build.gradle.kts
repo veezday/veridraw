@@ -1,6 +1,5 @@
 plugins {
     java
-    idea
     id("com.diffplug.spotless") version "6.25.0"
     id("org.springframework.boot") version "3.3.5" apply false
     id("io.spring.dependency-management") version "1.1.6" apply false
@@ -13,12 +12,13 @@ java {
 }
 
 subprojects {
-    apply(plugin = "java")
-    apply(plugin = "idea")
-    apply(plugin = "com.diffplug.spotless")
-
     group = "io.veridraw"
     version = "0.1.0-SNAPSHOT"
+
+    apply(plugin = "java")
+    apply(plugin = "com.diffplug.spotless")
+    apply(plugin = "io.spring.dependency-management")
+
 
     repositories {
         mavenCentral()
