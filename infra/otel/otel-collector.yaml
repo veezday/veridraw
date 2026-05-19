@@ -8,22 +8,37 @@ receivers:
 
 processors:
     batch:
+        timeout: 1s
+        send_batch_size: 1024
 
 exporters:
     prometheus:
         endpoint: 0.0.0.0:8889
+        namespace: veridraw
+
     otlp/jaeger:
         endpoint: jaeger:4317
         tls:
             insecure: true
 
+    debug:
+        verbosity: detailed
+        sampling_initial: 1
+        sampling_thereafter: 100
+
 service:
     pipelines:
         metrics:
-            receivers: [ otlp ]
-            processors: [ batch ]
-            exporters: [ prometheus ]
+            receivers: [otlp]
+            processors: [batch]
+            exporters: [prometheus]
+
         traces:
-            receivers: [ otlp ]
-            processors: [ batch ]
-            exporters: [ otlp/jaeger ]
+            receivers: [otlp]
+            processors: [batch]
+            exporters: [otlp/jaeger, debug]
+
+        logs:
+            receivers: [otlp]
+            processors: [batch]
+            exporters: [debug]

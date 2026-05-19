@@ -1,6 +1,5 @@
 plugins {
     id("org.springframework.boot")
-    id("io.spring.dependency-management")
 }
 
 dependencies {
@@ -11,8 +10,8 @@ dependencies {
 }
 
 tasks.bootJar {
-    enabled = true
+    enabled = false
 }
 tasks.jar {
-    enabled = false
+    enabled = true
 }
