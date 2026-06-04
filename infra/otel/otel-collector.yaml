@@ -21,6 +21,12 @@ exporters:
         tls:
             insecure: true
 
+    loki:
+        endpoint: "http://loki:3100/loki/api/v1/push"
+        default_labels_enabled:
+            exporter: true
+            job: true
+
     debug:
         verbosity: detailed
         sampling_initial: 1
@@ -41,4 +47,4 @@ service:
         logs:
             receivers: [otlp]
             processors: [batch]
-            exporters: [debug]
+            exporters: [loki, debug]

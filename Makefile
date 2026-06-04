@@ -1,91 +1,93 @@
-# Makefile for VeriDraw (Linux/Mac)
-# Windows users: use .\infra.ps1 instead
+# Makefile for Docker Compose Stack Management
+# Usage: make <target> [SERVICE=name]
 
-.PHONY: help infra-up infra-down infra-logs infra-restart infra-status demo-token clean
+.PHONY: up down rebuild status logs clean help check-docker
 
-# Цвета для вывода
-GREEN := \033[0;32m
-YELLOW := \033[0;33m
-CYAN := \033[0;36m
-NC := \033[0m
+# Configuration
+COMPOSE_CMD := docker compose
+INFRA_FILE  := docker-compose.infra.yml
+SERVICES_FILE := docker-compose.services.yml
+COMPOSE_FLAGS := -f $(INFRA_FILE) -f $(SERVICES_FILE)
+
+# Capture optional service argument (e.g., make rebuild gateway)
+SERVICE ?= $(filter-out $@,$(MAKECMDGOALS))
+
+# ANSI Colors
+CYAN    := \033[36m
+GREEN   := \033[32m
+RED     := \033[31m
+YELLOW  := \033[33m
+WHITE   := \033[37m
+RESET   := \033[0m
+
+# Output helpers
+define info
+	@echo -e "$(CYAN)[ℹ️] $(1)$(RESET)"
+endef
+define success
+	@echo -e "$(GREEN)[✅] $(1)$(RESET)"
+endef
+define error
+	@echo -e "$(RED)[❌] $(1)$(RESET)"
+endef
+
+# Pre-flight environment check
+check-docker:
+	@command -v $(COMPOSE_CMD) >/dev/null 2>&1 || { \
+		command -v docker-compose >/dev/null 2>&1 && eval COMPOSE_CMD=docker-compose || { \
+			$(call error,Docker Compose is not installed or not in PATH.); exit 1; }; \
+	}
+	@docker info >/dev/null 2>&1 || { \
+		$(call error,Docker is not running. Start it and retry.); exit 1; \
+	}
+	@$(call info,Docker environment verified.)
+
+# Targets
+up: check-docker
+	$(call info,Starting infrastructure & services...)
+	@$(COMPOSE_CMD) $(COMPOSE_FLAGS) up -d
+	@$(call success,Stack started.)
+
+down: check-docker
+	$(call info,Stopping stacks...)
+	@$(COMPOSE_CMD) $(COMPOSE_FLAGS) down
+	@$(call success,Stacks stopped.)
+
+rebuild: check-docker
+	$(call info,Rebuilding services (dev mode)...)
+	@DOCKER_BUILDKIT=1 $(COMPOSE_CMD) $(COMPOSE_FLAGS) up -d --build --force-recreate $(SERVICE)
+	@$(call success,Services rebuilt & restarted.)
+
+status: check-docker
+	$(call info,Containers & Port Mappings:)
+	@$(COMPOSE_CMD) $(COMPOSE_FLAGS) ps
+	@echo -e "\n$(YELLOW)🔍 Listening Application Ports:$(RESET)"
+	@docker ps --format "table {{.Names}}\t{{.Ports}}" | grep "0.0.0.0" || true
+
+logs: check-docker
+	@$(call info,Tailing logs for: $(if $(SERVICE),$(SERVICE),all))
+	@$(COMPOSE_CMD) $(COMPOSE_FLAGS) logs -f --tail=100 $(SERVICE)
+
+clean: check-docker
+	$(call info,Cleaning volumes, networks & local images...)
+	@$(COMPOSE_CMD) $(COMPOSE_FLAGS) down -v --rmi local --remove-orphans
+	@$(call success,Cleanup complete.)
 
 help:
-	@echo ""
-	@echo -e "$(GREEN)VeriDraw — Infrastructure Commands (Linux/Mac)$(NC)"
-	@echo ""
-	@echo "Usage: make <target>"
-	@echo ""
-	@echo "Targets:"
-	@echo "  infra-up       Start all infrastructure services"
-	@echo "  infra-down     Stop all infrastructure services"
-	@echo "  infra-logs     Show logs from all services"
-	@echo "  infra-restart  Restart all services"
-	@echo "  infra-status   Show status of all services"
-	@echo "  demo-token     Get JWT token for demo-user via Keycloak"
-	@echo "  clean          Remove all volumes and reset infrastructure state"
-	@echo ""
-	@echo "Quick Start:"
-	@echo "  1. make infra-up"
-	@echo "  2. make demo-token"
-	@echo "  3. Use token in Authorization header: Bearer <token>"
-	@echo ""
-	@echo "Windows users: use '.\infra.ps1 <command>' instead"
+	@echo -e "$(WHITE)🐳 Docker Compose Manager$(RESET)"
+	@echo -e "Usage: make [command] [SERVICE=name]\n"
+	@echo -e "Commands:"
+	@echo -e "  up       Start all stacks (infra + services)"
+	@echo -e "  down     Stop all containers"
+	@echo -e "  rebuild  Rebuild & restart services (use during dev)"
+	@echo -e "  status   Show containers & published ports"
+	@echo -e "  logs     Tail logs (optionally: make logs gateway)"
+	@echo -e "  clean    Remove volumes, networks, and local images"
+	@echo -e "  help     Show this message\n"
+	@echo -e "Examples:"
+	@echo -e "  make rebuild"
+	@echo -e "  make logs gateway"
+	@echo -e "  make status"
 
-infra-up:
-	@echo -e "$(YELLOW)Starting VeriDraw infrastructure...$(NC)"
-	docker compose -f docker-compose.infra.yml up -d
-	@echo ""
-	@echo -e "$(GREEN)Infrastructure started!$(NC)"
-	@echo ""
-	@echo -e "$(CYAN)Services:$(NC)"
-	@echo "  • PostgreSQL:   localhost:5432 (veridraw/veridraw_password)"
-	@echo "  • Redis:        localhost:6379"
-	@echo "  • Kafka:        localhost:9092"
-	@echo "  • Keycloak:     http://localhost:8080 (admin/admin)"
-	@echo "  • Grafana:      http://localhost:3000 (admin/admin)"
-	@echo "  • Prometheus:   http://localhost:9090"
-	@echo "  • Jaeger:       http://localhost:16686"
-	@echo "  • MailHog:      http://localhost:8025"
-	@echo ""
-	@echo -e "$(YELLOW)Check status: make infra-status$(NC)"
-
-infra-down:
-	@echo -e "$(YELLOW)Stopping VeriDraw infrastructure...$(NC)"
-	docker compose -f docker-compose.infra.yml down
-
-infra-logs:
-	docker compose -f docker-compose.infra.yml logs -f
-
-infra-restart: infra-down infra-up
-
-infra-status:
-	@echo -e "$(CYAN)VeriDraw Infrastructure Status:$(NC)"
-	docker compose -f docker-compose.infra.yml ps
-
-demo-token:
-	@echo -e "$(YELLOW)Requesting JWT token for demo-user...$(NC)"
-	@curl -s -X POST http://localhost:8080/realms/veridraw/protocol/openid-connect/token \
-		-d "client_id=veridraw-api" \
-		-d "client_secret=veridraw-api-secret-key-2026" \
-		-d "username=demo-user" \
-		-d "password=password123" \
-		-d "grant_type=password" | jq -r '.access_token' 2>/dev/null || \
-		(echo "jq not installed or failed. Install jq or use manual curl command." && \
-		curl -s -X POST http://localhost:8080/realms/veridraw/protocol/openid-connect/token \
-			-d "client_id=veridraw-api" \
-			-d "client_secret=veridraw-api-secret-key-2026" \
-			-d "username=demo-user" \
-			-d "password=password123" \
-			-d "grant_type=password")
-	@echo ""
-	@echo -e "$(GREEN)Usage: Authorization: Bearer <token>$(NC)"
-
-clean:
-	@echo -e "$(YELLOW)WARNING: This will remove ALL containers and volumes!$(NC)"
-	@read -p "Are you sure? Type 'yes' to continue: " confirm && \
-	if [ "$$confirm" = "yes" ]; then \
-		docker compose -f docker-compose.infra.yml down -v; \
-		echo -e "$(GREEN)Infrastructure cleaned. Run 'make infra-up' to start fresh.$(NC)"; \
-	else \
-		echo "Cancelled."; \
-	fi
+# Default target
+.DEFAULT_GOAL := help

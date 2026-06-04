@@ -19,7 +19,7 @@
           "temporary": false
         }
       ],
-      "realmRoles": ["ROLE_USER"],
+      "realmRoles": ["USER"],
       "clientRoles": {}
     },
     {
@@ -36,18 +36,18 @@
           "temporary": false
         }
       ],
-      "realmRoles": ["ROLE_ADMIN", "ROLE_USER"],
+      "realmRoles": ["ADMIN", "USER"],
       "clientRoles": {}
     }
   ],
   "roles": {
     "realm": [
       {
-        "name": "ROLE_USER",
+        "name": "USER",
         "description": "Standard user role"
       },
       {
-        "name": "ROLE_ADMIN",
+        "name": "ADMIN",
         "description": "Administrator role"
       }
     ]

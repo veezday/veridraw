@@ -1,0 +1,143 @@
+# docker-compose.services.yml
+# Application services (Gateway, Draw Core, Notify Worker)
+# Запуск: docker compose -f docker-compose.services.yml up -d
+
+name: veridraw-services
+
+services:
+    gateway:
+        build:
+            context: .
+            dockerfile: gateway/Dockerfile
+        container_name: veridraw-gateway
+        ports:
+            - "8081:8081"
+        environment:
+            SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+            SPRING_OUTPUT_ANSI_ENABLED: ALWAYS
+
+            # Keycloak
+            SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8080/realms/veridraw
+            SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/veridraw/protocol/openid-connect/certs
+
+            # Redis (rate limiting)
+            SPRING_DATA_REDIS_HOST: redis
+            SPRING_DATA_REDIS_PORT: 6379
+
+            # Downstream services
+            DRAW_CORE_URL: http://draw-core:8082
+            NOTIFY_WORKER_URL: http://notify-worker:8083
+
+            # OpenTelemetry
+            OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+            OTEL_SERVICE_NAME: gateway
+
+            # JVM settings
+            JAVA_OPTS: "-Xms256m -Xmx512m"
+        depends_on:
+            keycloak:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+            otel-collector:
+                condition: service_started
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+            interval: 30s
+            timeout: 10s
+            retries: 5
+            start_period: 60s
+        networks:
+            - veridraw-net
+        restart: unless-stopped
+        volumes:
+            - gateway-logs:/app/logs
+
+    #draw-core:
+        #build:
+            #context: .
+            #dockerfile: draw-core/Dockerfile
+        #container_name: veridraw-draw-core
+        #ports:
+            #- "8082:8082"
+        #environment:
+            #SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+#
+            ## Database
+            #SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/veridraw
+            #SPRING_DATASOURCE_USERNAME: veridraw
+            #SPRING_DATASOURCE_PASSWORD: veridraw_password
+#
+            ## Kafka
+            #SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+#
+            ## OpenTelemetry
+            #OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+            #OTEL_SERVICE_NAME: draw-core
+#
+            ## External API (random.org)
+            #RANDOM_ORG_API_KEY: ${RANDOM_ORG_API_KEY:-}
+        #depends_on:
+            #postgres:
+                #condition: service_healthy
+            #kafka:
+                #condition: service_started
+        #healthcheck:
+            #test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
+            #interval: 30s
+            #timeout: 10s
+            #retries: 5
+            #start_period: 60s
+        #networks:
+            #- veridraw-net
+        #restart: unless-stopped
+        #volumes:
+            #- draw-core-logs:/app/logs
+#
+    #notify-worker:
+        #build:
+            #context: .
+            #dockerfile: notify-worker/Dockerfile
+        #container_name: veridraw-notify-worker
+        #ports:
+            #- "8083:8083"
+        #environment:
+            #SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+#
+            ## Database
+            #SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/veridraw
+            #SPRING_DATASOURCE_USERNAME: veridraw
+            #SPRING_DATASOURCE_PASSWORD: veridraw_password
+#
+            ## Kafka
+            #SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+            #SPRING_KAFKA_CONSUMER_GROUP_ID: notify-worker-group
+#
+            ## MailHog
+            #SPRING_MAIL_HOST: mailhog
+            #SPRING_MAIL_PORT: 1025
+#
+            ## OpenTelemetry
+            #OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+            #OTEL_SERVICE_NAME: notify-worker
+        #depends_on:
+            #postgres:
+                #condition: service_healthy
+            #kafka:
+                #condition: service_started
+            #mailhog:
+                #condition: service_started
+        #networks:
+            #- veridraw-net
+        #restart: unless-stopped
+        #volumes:
+            #- notify-worker-logs:/app/logs
+
+networks:
+    veridraw-net:
+        external: true
+
+volumes:
+    gateway-logs:
+    draw-core-logs:
+    notify-worker-logs:

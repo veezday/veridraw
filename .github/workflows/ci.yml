@@ -2,16 +2,14 @@ name: CI Pipeline
 
 on:
     push:
-        branches: [ "main", "chore/*", "feat/*", "fix/*" ]
+        branches: ["main", "chore/*", "feat/*", "fix/*"]
     pull_request:
-        branches: [ "main" ]
+        branches: ["main"]
 
 jobs:
     build-and-test:
         runs-on: ubuntu-latest
         timeout-minutes: 10
-        env:
-            GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.parallel=false"
 
         steps:
             - uses: actions/checkout@v4
@@ -21,13 +19,17 @@ jobs:
               with:
                   java-version: '21'
                   distribution: 'temurin'
-                  cache: 'gradle'
+
+            - name: Setup Gradle
+              uses: gradle/actions/setup-gradle@v4
+              with:
+                  cache-read-only: ${{ github.ref != 'refs/heads/main' }}
 
             - name: Grant execute permission for gradlew
               run: chmod +x gradlew
 
-            - name: Build & Run Unit Tests
-              run: ./gradlew clean build -x test --no-daemon
+            - name: Build & Run Tests
+              run: ./gradlew build -x --parallel --no-daemon
 
             - name: Upload Test Reports
               if: always()
