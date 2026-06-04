@@ -10,7 +10,7 @@ spring:
         gateway:
             discovery:
                 locator:
-                    enabled: false # Не используем service discovery для простоты
+                    enabled: false
 
             default-filters:
                 # Add request ID for tracing
@@ -25,7 +25,7 @@ spring:
 
             routes:
                 - id: draw-core
-                  uri: http://localhost:8082
+                  uri: http://draw-core:8082
                   predicates:
                       - Path=/api/draws/**, /api/tickets/**
                   filters:
@@ -36,7 +36,7 @@ spring:
                             fallbackUri: forward:/fallback/draw-core
 
                 - id: notify-worker
-                  uri: http://localhost:8083
+                  uri: http://notify-worker:8083
                   predicates:
                       - Path=/api/notifications/**
                   filters:
@@ -47,13 +47,13 @@ spring:
         oauth2:
             resourceserver:
                 jwt:
-                    issuer-uri: http://localhost:8080/realms/veridraw
-                    jwk-set-uri: http://localhost:8080/realms/veridraw/protocol/openid-connect/certs
+                    issuer-uri: http://keycloak:8080/realms/veridraw
+                    jwk-set-uri: http://keycloak:8080/realms/veridraw/protocol/openid-connect/certs
 
     # Redis rate limiting
     data:
         redis:
-            host: localhost
+            host: redis
             port: 6379
 
 # Actuator endpoints
@@ -78,7 +78,7 @@ otel:
         name: gateway
     exporter:
         otlp:
-            endpoint: http://localhost:4318
+            endpoint: http://otel-collector:4318
             protocol: http/protobuf
     logs:
         exporter:
@@ -89,8 +89,11 @@ otel:
 logging:
     level:
         root: INFO
-        io.veridraw: DEBUG
-        org.springframework.cloud.gateway: DEBUG
-        org.springframework.security: DEBUG
+        io.veridraw: INFO
+        org.springframework.cloud.gateway: INFO
+        org.springframework.security: INFO
+        org.springframework.security.authorization: TRACE
+        org.springframework.security.web.server.authorization: TRACE
+        reactor.core.publisher.Mono: DEBUG
     pattern:
         console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

@@ -78,15 +78,25 @@ services:
             KEYCLOAK_ADMIN_PASSWORD: admin
             KC_HEALTH_ENABLED: true
             KC_METRICS_ENABLED: true
+            KC_METRICS_PROMETHEUS_ENABLED: true
+            KC_HTTP_ENABLED: true
+            KC_HOSTNAME: keycloak:8080
+            KC_HOSTNAME_STRICT: false
+            KC_PROXY: edge
         ports:
             - "8080:8080"
         volumes:
             - ./infra/keycloak/veridraw-realm.json:/opt/keycloak/data/import/veridraw-realm.json:ro
         networks:
             - veridraw-net
+        healthcheck:
+            test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && exit 0 || exit 1"]
+            interval: 10s
+            timeout: 5s
+            retries: 10
 
     otel-collector:
-        image: otel/opentelemetry-collector:0.110.0
+        image: otel/opentelemetry-collector-contrib:0.110.0
         container_name: veridraw-otel
         command: ["--config=/etc/otel-collector.yaml"]
         volumes:
@@ -97,9 +107,6 @@ services:
             - "8888:8888"   # Metrics endpoint
         networks:
             - veridraw-net
-        depends_on:
-            - prometheus
-            - jaeger
 
     prometheus:
         image: prom/prometheus:v2.52.0
@@ -147,13 +154,21 @@ services:
             - prometheus
 
     jaeger:
-        image: jaegertracing/all-in-one:1.57.0
+        image: jaegertracing/all-in-one:1.53
         container_name: veridraw-jaeger
         ports:
-            - "16686:16686"  # UI
-            - "14250:14250"  # gRPC
+            - "16686:16686" # Web UI
+            - "14250:14250" # OTLP gRPC
         environment:
             COLLECTOR_OTLP_ENABLED: true
+            METRICS_PROMETHEUS_ENABLED: true
+            METRICS_BACKEND: prometheus
+        healthcheck:
+            test: [ "CMD", "wget", "--spider", "-q", "http://localhost:16686" ]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+        restart: unless-stopped
         networks:
             - veridraw-net
 
@@ -166,6 +181,50 @@ services:
         networks:
             - veridraw-net
 
+    loki:
+        image: grafana/loki:2.9.3
+        container_name: veridraw-loki
+        ports:
+            - "3100:3100"
+        volumes:
+            - ./infra/loki/loki-config.yml:/etc/loki/local-config.yaml:ro
+            - loki_data:/loki
+        command: -config.file=/etc/loki/local-config.yaml
+        networks:
+            - veridraw-net
+        depends_on:
+            - grafana
+
+    cadvisor:
+        image: gcr.io/cadvisor/cadvisor:latest
+        container_name: veridraw-cadvisor
+        restart: always
+        privileged: true
+        devices:
+            - /dev/kmsg:/dev/kmsg
+        volumes:
+            - /:/rootfs:ro
+            - /var/run:/var/run:ro
+            - /sys:/sys:ro
+            - /var/lib/docker/:/var/lib/docker:ro
+        ports:
+            - "8085:8080"
+        networks:
+            - veridraw-net
+
+    promtail:
+        image: grafana/promtail:2.9.3
+        container_name: veridraw-promtail
+        volumes:
+            - ./infra/promtail/promtail-config.yml:/etc/promtail/config.yml:ro
+            - /var/lib/docker/containers:/var/lib/docker/containers:ro
+            - /var/run/docker.sock:/var/run/docker.sock
+        command: -config.file=/etc/promtail/config.yml
+        networks:
+            - veridraw-net
+        depends_on:
+            - loki
+
 networks:
     veridraw-net:
         driver: bridge
@@ -176,3 +235,5 @@ volumes:
     kafka_data:
     prometheus_data:
     grafana_data:
+    loki_data:
+    jaeger_data:

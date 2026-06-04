@@ -1,0 +1,33 @@
+# Build outputs
+build/
+**/build/
+!**/src/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# Git
+.git/
+.gitignore
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.docker/
+
+# Gradle wrapper (копируем в Dockerfile)
+# gradlew
+# gradlew.bat
+# gradle/wrapper/
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
