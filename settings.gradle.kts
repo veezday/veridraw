@@ -1,6 +1,13 @@
 rootProject.name = "veridraw"
 
-include("shared")
-include("gateway")
-include("draw-core")
-include("notify-worker")
+fun includeIfExists(projectName: String) {
+    val projectDir = file(projectName)
+    if (projectDir.exists() && projectDir.isDirectory) {
+        include(projectName)
+    }
+}
+
+includeIfExists("shared")
+includeIfExists("gateway")
+includeIfExists("draw-core")
+includeIfExists("notify-worker")

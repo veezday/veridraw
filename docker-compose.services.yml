@@ -13,7 +13,6 @@ services:
         ports:
             - "8081:8081"
         environment:
-            SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
             SPRING_OUTPUT_ANSI_ENABLED: ALWAYS
 
             # Keycloak
@@ -47,53 +46,48 @@ services:
             timeout: 10s
             retries: 5
             start_period: 60s
-        networks:
-            - veridraw-net
         restart: unless-stopped
         volumes:
             - gateway-logs:/app/logs
 
-    #draw-core:
-        #build:
-            #context: .
-            #dockerfile: draw-core/Dockerfile
-        #container_name: veridraw-draw-core
-        #ports:
-            #- "8082:8082"
-        #environment:
-            #SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
-#
-            ## Database
-            #SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/veridraw
-            #SPRING_DATASOURCE_USERNAME: veridraw
-            #SPRING_DATASOURCE_PASSWORD: veridraw_password
-#
-            ## Kafka
-            #SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-#
-            ## OpenTelemetry
-            #OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
-            #OTEL_SERVICE_NAME: draw-core
-#
-            ## External API (random.org)
-            #RANDOM_ORG_API_KEY: ${RANDOM_ORG_API_KEY:-}
-        #depends_on:
-            #postgres:
-                #condition: service_healthy
-            #kafka:
-                #condition: service_started
-        #healthcheck:
-            #test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
-            #interval: 30s
-            #timeout: 10s
-            #retries: 5
-            #start_period: 60s
-        #networks:
-            #- veridraw-net
-        #restart: unless-stopped
-        #volumes:
-            #- draw-core-logs:/app/logs
-#
+    draw-core:
+        build:
+            context: .
+            dockerfile: draw-core/Dockerfile
+        container_name: veridraw-draw-core
+        ports:
+            - "8082:8082"
+        environment:
+            # Database
+            SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/veridraw
+            SPRING_DATASOURCE_USERNAME: veridraw
+            SPRING_DATASOURCE_PASSWORD: veridraw_password
+
+            # Kafka
+            SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+
+            # OpenTelemetry
+            OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+            OTEL_SERVICE_NAME: draw-core
+
+            # External API (random.org)
+            RANDOM_ORG_API_KEY: ${RANDOM_ORG_API_KEY:-}
+            RANDOM_ORG_BASE_URL: ${RANDOM_ORG_BASE_URL:-}
+        depends_on:
+            postgres:
+                condition: service_healthy
+            kafka:
+                condition: service_started
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
+            interval: 30s
+            timeout: 10s
+            retries: 5
+            start_period: 60s
+        restart: unless-stopped
+        volumes:
+            - draw-core-logs:/app/logs
+
     #notify-worker:
         #build:
             #context: .
@@ -127,15 +121,9 @@ services:
                 #condition: service_started
             #mailhog:
                 #condition: service_started
-        #networks:
-            #- veridraw-net
         #restart: unless-stopped
         #volumes:
             #- notify-worker-logs:/app/logs
-
-networks:
-    veridraw-net:
-        external: true
 
 volumes:
     gateway-logs:
