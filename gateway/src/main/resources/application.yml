@@ -8,39 +8,42 @@ spring:
     # Cloud gateway
     cloud:
         gateway:
-            discovery:
-                locator:
-                    enabled: false
+            server:
+                webflux:
+                    routes:
+                        - id: draw-core
+                          uri: http://draw-core:8082
+                          predicates:
+                            - Path=/api/draws/**, /api/tickets/**
+                          filters:
+                            - StripPrefix=0
+                            - name: CircuitBreaker
+                              args:
+                                name: drawCoreCircuitBreaker
+                                fallbackUri: forward:/fallback/draw-core
 
-            default-filters:
-                # Add request ID for tracing
-                - name: RequestRateLimiter
-                  args:
-                      redis-rate-limiter.replenishRate: 10  # 10 request/sec
-                      redis-rate-limiter.burstCapacity: 20  # Max 20 request
-                      key-resolver: "#{@ipKeyResolver}"
+                        - id: notify-worker
+                          uri: http://notify-worker:8083
+                          predicates:
+                            - Path=/api/notifications/**
+                          filters:
+                            - StripPrefix=0
 
-                # Add CORS headers
-                - AddResponseHeader=X-Request-Id, ${random.uuid}
+                    discovery:
+                        locator:
+                            enabled: false
+                            lower-case-service-id: true
 
-            routes:
-                - id: draw-core
-                  uri: http://draw-core:8082
-                  predicates:
-                      - Path=/api/draws/**, /api/tickets/**
-                  filters:
-                      - StripPrefix=0
-                      - name: CircuitBreaker
-                        args:
-                            name: drawCoreCircuitBreaker
-                            fallbackUri: forward:/fallback/draw-core
+                    default-filters:
+                        # Add request ID for tracing
+                        - name: RequestRateLimiter
+                          args:
+                              redis-rate-limiter.replenishRate: 10  # 10 request/sec
+                              redis-rate-limiter.burstCapacity: 20  # Max 20 request
+                              key-resolver: "#{@ipKeyResolver}"
 
-                - id: notify-worker
-                  uri: http://notify-worker:8083
-                  predicates:
-                      - Path=/api/notifications/**
-                  filters:
-                      - StripPrefix=0
+                        # Add CORS headers
+                        - AddResponseHeader=X-Request-Id, ${random.uuid}
 
     # Security OAuth2
     security:
@@ -90,7 +93,9 @@ logging:
     level:
         root: INFO
         io.veridraw: INFO
-        org.springframework.cloud.gateway: INFO
+        org.springframework.cloud.gateway: DEBUG
+        org.springframework.http.server.reactive: DEBUG
+        reactor.netty.http.client: DEBUG
         org.springframework.security: INFO
         org.springframework.security.authorization: TRACE
         org.springframework.security.web.server.authorization: TRACE

@@ -1,6 +1,5 @@
-package io.veridraw.gateway.config;
+package io.veridraw.drawcore.config;
 
-import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
@@ -9,24 +8,17 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
 
 @Configuration
 @EnableWebFluxSecurity
-@AllArgsConstructor
 public class SecurityConfig {
-    private final KeycloakJwtConverter keycloakJwtConverter;
 
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
         http.csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(exchanges -> exchanges
-                        .pathMatchers("/actuator/**", "/api/health", "/swagger-ui/**", "/v3/api-docs/**")
+                        .pathMatchers("/actuator/health", "/actuator/info", "/actuator/prometheus")
                         .permitAll()
-                        .pathMatchers("/api/admin/**")
-                        .hasRole("ADMIN")
-                        .pathMatchers("api/draws", "api/draws/**", "api/tickets/**", "/api/notifications/**")
-                        .authenticated()
                         .anyExchange()
-                        .denyAll())
-                .oauth2ResourceServer(
-                        oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(keycloakJwtConverter)));
+                        .authenticated())
+                .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> {}));
 
         return http.build();
     }

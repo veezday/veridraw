@@ -22,8 +22,6 @@ services:
             interval: 5s
             timeout: 5s
             retries: 5
-        networks:
-            - veridraw-net
 
     redis:
         image: redis:7-alpine
@@ -38,8 +36,6 @@ services:
             interval: 5s
             timeout: 5s
             retries: 5
-        networks:
-            - veridraw-net
 
     kafka:
         image: apache/kafka:3.7.0
@@ -66,8 +62,6 @@ services:
             interval: 10s
             timeout: 5s
             retries: 5
-        networks:
-            - veridraw-net
 
     keycloak:
         image: quay.io/keycloak/keycloak:24.0
@@ -87,8 +81,6 @@ services:
             - "8080:8080"
         volumes:
             - ./infra/keycloak/veridraw-realm.json:/opt/keycloak/data/import/veridraw-realm.json:ro
-        networks:
-            - veridraw-net
         healthcheck:
             test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && exit 0 || exit 1"]
             interval: 10s
@@ -105,8 +97,6 @@ services:
             - "4317:4317"   # OTLP gRPC
             - "4318:4318"   # OTLP HTTP
             - "8888:8888"   # Metrics endpoint
-        networks:
-            - veridraw-net
 
     prometheus:
         image: prom/prometheus:v2.52.0
@@ -128,8 +118,6 @@ services:
             interval: 10s
             timeout: 5s
             retries: 5
-        networks:
-            - veridraw-net
 
     grafana:
         image: grafana/grafana:10.4.3
@@ -148,8 +136,6 @@ services:
             interval: 10s
             timeout: 5s
             retries: 5
-        networks:
-            - veridraw-net
         depends_on:
             - prometheus
 
@@ -169,8 +155,6 @@ services:
             timeout: 5s
             retries: 5
         restart: unless-stopped
-        networks:
-            - veridraw-net
 
     mailhog:
         image: mailhog/mailhog:v1.0.1
@@ -178,8 +162,6 @@ services:
         ports:
             - "1025:1025"  # SMTP
             - "8025:8025"  # Web UI
-        networks:
-            - veridraw-net
 
     loki:
         image: grafana/loki:2.9.3
@@ -190,8 +172,6 @@ services:
             - ./infra/loki/loki-config.yml:/etc/loki/local-config.yaml:ro
             - loki_data:/loki
         command: -config.file=/etc/loki/local-config.yaml
-        networks:
-            - veridraw-net
         depends_on:
             - grafana
 
@@ -209,8 +189,6 @@ services:
             - /var/lib/docker/:/var/lib/docker:ro
         ports:
             - "8085:8080"
-        networks:
-            - veridraw-net
 
     promtail:
         image: grafana/promtail:2.9.3
@@ -220,14 +198,8 @@ services:
             - /var/lib/docker/containers:/var/lib/docker/containers:ro
             - /var/run/docker.sock:/var/run/docker.sock
         command: -config.file=/etc/promtail/config.yml
-        networks:
-            - veridraw-net
         depends_on:
             - loki
-
-networks:
-    veridraw-net:
-        driver: bridge
 
 volumes:
     postgres_data:

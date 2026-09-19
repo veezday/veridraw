@@ -1,0 +1,75 @@
+server:
+    port: 8082
+
+spring:
+    application:
+        name: draw-core
+
+    # R2DBC (реактивная работа с PostgreSQL)
+    r2dbc:
+        url: r2dbc:postgresql://postgres:5432/veridraw
+        username: veridraw
+        password: veridraw_password
+
+    # Flyway для миграций (использует JDBC)
+    flyway:
+        enabled: true
+        url: jdbc:postgresql://postgres:5432/veridraw
+        user: veridraw
+        password: veridraw_password
+        locations: classpath:db/migration
+
+    # Kafka
+    kafka:
+        bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+        producer:
+            key-serializer: org.apache.kafka.common.serialization.StringSerializer
+            value-serializer: org.apache.kafka.common.serialization.StringSerializer
+            acks: all
+            retries: 3
+
+    # Security OAuth2
+    security:
+        oauth2:
+            resourceserver:
+                jwt:
+                    issuer-uri: http://keycloak:8080/realms/veridraw
+                    jwk-set-uri: http://keycloak:8080/realms/veridraw/protocol/openid-connect/certs
+
+    # Actuator
+    management:
+        endpoints:
+            web:
+                exposure:
+                    include: health,info,prometheus,metrics
+        endpoint:
+            health:
+                show-details: always
+        prometheus:
+            metrics:
+                export:
+                    enabled: true
+
+# OpenTelemetry
+otel:
+    service:
+        name: draw-core
+    exporter:
+        otlp:
+            endpoint: http://otel-collector:4318
+            protocol: http/protobuf
+    logs:
+        exporter:
+            otlp:
+                enabled: true
+
+# Logging
+logging:
+    level:
+        root: INFO
+        io.veridraw: DEBUG
+        org.springframework.r2dbc: DEBUG
+        org.flywaydb: DEBUG
+        org.springframework.boot.autoconfigure.flyway: DEBUG
+    pattern:
+        console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

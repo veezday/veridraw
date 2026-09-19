@@ -5,13 +5,16 @@ plugins {
 dependencies {
     implementation(project(":shared"))
 
-    implementation("org.springframework.cloud:spring-cloud-starter-gateway")
+    implementation("org.springframework.cloud:spring-cloud-starter-gateway-server-webflux")
+    implementation("org.springframework.cloud:spring-cloud-starter-loadbalancer")
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
     implementation("org.springframework.boot:spring-boot-starter-data-redis-reactive")
-    implementation("io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter")
-    implementation("io.opentelemetry:opentelemetry-api-incubator")
-    implementation("io.micrometer:micrometer-registry-prometheus")
+    //implementation("io.micrometer:micrometer-tracing-bridge-otel")
+    //implementation("io.opentelemetry:opentelemetry-exporter-otlp")
+    //implementation("io.micrometer:micrometer-registry-prometheus")
+    implementation("org.springframework.boot:spring-boot-starter-micrometer-metrics")
+    runtimeOnly("io.micrometer:micrometer-registry-otlp")
     implementation("org.springframework.cloud:spring-cloud-starter-circuitbreaker-reactor-resilience4j")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
 
@@ -26,9 +29,7 @@ dependencies {
 
 dependencyManagement {
     imports {
-        mavenBom("org.springframework.cloud:spring-cloud-dependencies:2023.0.6")
-        mavenBom("io.opentelemetry:opentelemetry-bom:1.62.0")
-        mavenBom("io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom:2.27.0")
+        mavenBom("org.springframework.cloud:spring-cloud-dependencies:2025.1.2")
     }
 }
 
