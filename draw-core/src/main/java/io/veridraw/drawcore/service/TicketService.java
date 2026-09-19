@@ -30,14 +30,15 @@ public class TicketService {
                 .flatMap(draw -> {
                     ticket.setStatus("PURCHASED");
                     ticket.setPurchasedAt(Instant.now());
-                    return ticketRepository.save(ticket)
-                        .onErrorResume(DataIntegrityViolationException.class, ex -> {
-                            log.warn("Attempt to purchase duplicate ticket. DrawId: {}, Email: {}",
-                                ticket.getDrawId(), ticket.getParticipantEmail());
+                    return ticketRepository.save(ticket).onErrorResume(DataIntegrityViolationException.class, ex -> {
+                        log.warn(
+                                "Attempt to purchase duplicate ticket. DrawId: {}, Email: {}",
+                                ticket.getDrawId(),
+                                ticket.getParticipantEmail());
 
-                            return Mono.error(new IllegalStateException(
-                                "A ticket for this email already exists in this draw"));
-                        });
+                        return Mono.error(
+                                new IllegalStateException("A ticket for this email already exists in this draw"));
+                    });
                 });
     }
 

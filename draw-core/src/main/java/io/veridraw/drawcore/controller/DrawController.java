@@ -3,7 +3,6 @@ package io.veridraw.drawcore.controller;
 import io.veridraw.drawcore.domain.Draw;
 import io.veridraw.drawcore.service.DrawService;
 import java.util.UUID;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -34,35 +33,35 @@ public class DrawController {
     @GetMapping("/{id}")
     public Mono<ResponseEntity<Draw>> getDrawById(@PathVariable UUID id) {
         return drawService
-            .getDrawById(id)
-            .map(ResponseEntity::ok)
-            .defaultIfEmpty(ResponseEntity.notFound().build());
+                .getDrawById(id)
+                .map(ResponseEntity::ok)
+                .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 
     @PostMapping("/{id}/activate")
     public Mono<ResponseEntity<Draw>> activateDraw(@PathVariable UUID id) {
         return drawService
-            .activateDraw(id)
-            .map(ResponseEntity::ok)
-            .doOnError(e -> log.error("ОШИБКА: {}", e.getMessage()))
-            .onErrorResume(e -> Mono.just(ResponseEntity.badRequest().build()));
+                .activateDraw(id)
+                .map(ResponseEntity::ok)
+                .doOnError(e -> log.error("ОШИБКА: {}", e.getMessage()))
+                .onErrorResume(e -> Mono.just(ResponseEntity.badRequest().build()));
     }
 
     @PostMapping("/{id}/complete")
     public Mono<ResponseEntity<Draw>> completeDraw(@PathVariable UUID id) {
         return drawService
-            .completeDraw(id)
-            .map(ResponseEntity::ok)
-            .doOnError(e -> log.error("ОШИБКА: {}", e.getMessage()))
-            .onErrorResume(e -> Mono.just(ResponseEntity.badRequest().build()));
+                .completeDraw(id)
+                .map(ResponseEntity::ok)
+                .doOnError(e -> log.error("ОШИБКА: {}", e.getMessage()))
+                .onErrorResume(e -> Mono.just(ResponseEntity.badRequest().build()));
     }
 
     @PostMapping("/{id}/cancel")
     public Mono<ResponseEntity<Draw>> cancelDraw(@PathVariable UUID id) {
         return drawService
-            .cancelDraw(id)
-            .map(ResponseEntity::ok)
-            .doOnError(e -> log.error("ОШИБКА: {}", e.getMessage()))
-            .onErrorResume(e -> Mono.just(ResponseEntity.badRequest().build()));
+                .cancelDraw(id)
+                .map(ResponseEntity::ok)
+                .doOnError(e -> log.error("ОШИБКА: {}", e.getMessage()))
+                .onErrorResume(e -> Mono.just(ResponseEntity.badRequest().build()));
     }
 }

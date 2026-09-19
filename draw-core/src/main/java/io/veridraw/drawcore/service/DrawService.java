@@ -61,57 +61,56 @@ public class DrawService {
                 .findByIdAndStatus(drawId, DrawStatus.ACTIVE)
                 .switchIfEmpty(Mono.error(new IllegalStateException("Draw not found or not in ACTIVE status")))
                 .flatMap(draw ->
-                    // Получаем все билеты
-                    ticketRepository.findByDrawId(drawId).collectList()
-                    .flatMap(tickets -> {
-                        if (tickets.isEmpty()) {
-                            return Mono.error(new IllegalStateException("No tickets purchased for this draw"));
-                        }
+                        // Получаем все билеты
+                        ticketRepository.findByDrawId(drawId).collectList().flatMap(tickets -> {
+                            if (tickets.isEmpty()) {
+                                return Mono.error(new IllegalStateException("No tickets purchased for this draw"));
+                            }
 
-                        // Выбираем случайного победителя
-                        return randomNumberService.getRandomInteger(0, tickets.size() - 1)
-                        .flatMap(winnerIndex -> {
-                            Ticket winnerTicket = tickets.get(winnerIndex);
+                            // Выбираем случайного победителя
+                            return randomNumberService
+                                    .getRandomInteger(0, tickets.size() - 1)
+                                    .flatMap(winnerIndex -> {
+                                        Ticket winnerTicket = tickets.get(winnerIndex);
 
-                            draw.setWinnerId(winnerTicket.getId());
-                            draw.setStatus(DrawStatus.COMPLETED);
-                            draw.setCompletedAt(Instant.now());
-                            draw.setUpdatedAt(Instant.now());
+                                        draw.setWinnerId(winnerTicket.getId());
+                                        draw.setStatus(DrawStatus.COMPLETED);
+                                        draw.setCompletedAt(Instant.now());
+                                        draw.setUpdatedAt(Instant.now());
 
-                            return drawRepository.save(draw)
-                            .flatMap(savedDraw -> {
-                                // Публикуем событие через Outbox
-                                String payload = String.format(
-                                    "{\"drawId\":\"%s\",\"winnerEmail\":\"%s\",\"winnerName\":\"%s\",\"drawName\":\"%s\"}",
-                                    savedDraw.getId(),
-                                    winnerTicket.getParticipantEmail(),
-                                    winnerTicket.getParticipantName(),
-                                    savedDraw.getName());
+                                        return drawRepository.save(draw).flatMap(savedDraw -> {
+                                            // Публикуем событие через Outbox
+                                            String payload = String.format(
+                                                    "{\"drawId\":\"%s\",\"winnerEmail\":\"%s\",\"winnerName\":\"%s\",\"drawName\":\"%s\"}",
+                                                    savedDraw.getId(),
+                                                    winnerTicket.getParticipantEmail(),
+                                                    winnerTicket.getParticipantName(),
+                                                    savedDraw.getName());
 
-                                OutboxEvent event = OutboxEvent.builder()
-                                    .aggregateType("Draw")
-                                    .aggregateId(savedDraw.getId())
-                                    .eventType("DrawCompleted")
-                                    .payload(Json.of(payload))
-                                    .createdAt(Instant.now())
-                                    .published(false)
-                                    .build();
+                                            OutboxEvent event = OutboxEvent.builder()
+                                                    .aggregateType("Draw")
+                                                    .aggregateId(savedDraw.getId())
+                                                    .eventType("DrawCompleted")
+                                                    .payload(Json.of(payload))
+                                                    .createdAt(Instant.now())
+                                                    .published(false)
+                                                    .build();
 
-                                return outboxRepository.save(event).thenReturn(savedDraw);
-                            });
-                        });
-                    })
-                );
+                                            return outboxRepository.save(event).thenReturn(savedDraw);
+                                        });
+                                    });
+                        }));
     }
 
     public Mono<Draw> cancelDraw(UUID drawId) {
         log.info("Canceling draw: {}", drawId);
-        return drawRepository.findByIdAndStatus(drawId, DrawStatus.ACTIVE)
-            .switchIfEmpty(Mono.error(new IllegalStateException("Draw not found or not in ACTIVE status")))
-            .flatMap(draw -> {
-                draw.setStatus(DrawStatus.CANCELLED);
-                draw.setUpdatedAt(Instant.now());
-                return drawRepository.save(draw).then(Mono.just(draw));
-            });
+        return drawRepository
+                .findByIdAndStatus(drawId, DrawStatus.ACTIVE)
+                .switchIfEmpty(Mono.error(new IllegalStateException("Draw not found or not in ACTIVE status")))
+                .flatMap(draw -> {
+                    draw.setStatus(DrawStatus.CANCELLED);
+                    draw.setUpdatedAt(Instant.now());
+                    return drawRepository.save(draw).then(Mono.just(draw));
+                });
     }
 }

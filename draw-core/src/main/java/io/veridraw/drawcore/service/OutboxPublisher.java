@@ -31,7 +31,10 @@ public class OutboxPublisher {
 
     private Mono<OutboxEvent> publishEvent(OutboxEvent event) {
         return Mono.fromFuture(() -> kafkaTemplate
-                        .send("draw-events", event.getEventType(), event.getPayload().asString())
+                        .send(
+                                "draw-events",
+                                event.getEventType(),
+                                event.getPayload().asString())
                         .toCompletableFuture())
                 .doOnSuccess(result -> log.info("Event sent to Kafka: {}", result.getRecordMetadata()))
                 .then(outboxRepository.save(event.toBuilder()

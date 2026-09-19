@@ -22,10 +22,10 @@ public class TicketController {
     @PostMapping
     public Mono<ResponseEntity<Ticket>> purchaseTicket(@RequestBody Ticket ticket) {
         return ticketService
-            .purchaseTicket(ticket)
-            .map(saved -> ResponseEntity.status(HttpStatus.CREATED).body(saved))
-            .doOnError(e -> log.error("ОШИБКА: {}", e.getMessage()))
-            .onErrorResume(e -> Mono.just(ResponseEntity.badRequest().build()));
+                .purchaseTicket(ticket)
+                .map(saved -> ResponseEntity.status(HttpStatus.CREATED).body(saved))
+                .doOnError(e -> log.error("ОШИБКА: {}", e.getMessage()))
+                .onErrorResume(e -> Mono.just(ResponseEntity.badRequest().build()));
     }
 
     @GetMapping("/draw/{drawId}")
