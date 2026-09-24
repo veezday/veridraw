@@ -46,7 +46,6 @@ services:
             timeout: 10s
             retries: 5
             start_period: 60s
-        restart: unless-stopped
         volumes:
             - gateway-logs:/app/logs
 
@@ -84,46 +83,42 @@ services:
             timeout: 10s
             retries: 5
             start_period: 60s
-        restart: unless-stopped
         volumes:
             - draw-core-logs:/app/logs
 
-    #notify-worker:
-        #build:
-            #context: .
-            #dockerfile: notify-worker/Dockerfile
-        #container_name: veridraw-notify-worker
-        #ports:
-            #- "8083:8083"
-        #environment:
-            #SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
-#
-            ## Database
-            #SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/veridraw
-            #SPRING_DATASOURCE_USERNAME: veridraw
-            #SPRING_DATASOURCE_PASSWORD: veridraw_password
-#
-            ## Kafka
-            #SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-            #SPRING_KAFKA_CONSUMER_GROUP_ID: notify-worker-group
-#
-            ## MailHog
-            #SPRING_MAIL_HOST: mailhog
-            #SPRING_MAIL_PORT: 1025
-#
-            ## OpenTelemetry
-            #OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
-            #OTEL_SERVICE_NAME: notify-worker
-        #depends_on:
-            #postgres:
-                #condition: service_healthy
-            #kafka:
-                #condition: service_started
-            #mailhog:
-                #condition: service_started
-        #restart: unless-stopped
-        #volumes:
-            #- notify-worker-logs:/app/logs
+    notify-worker:
+        build:
+            context: .
+            dockerfile: notify-worker/Dockerfile
+        container_name: veridraw-notify-worker
+        ports:
+            - "8083:8083"
+        environment:
+              # Database
+            SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/veridraw
+            SPRING_DATASOURCE_USERNAME: veridraw
+            SPRING_DATASOURCE_PASSWORD: veridraw_password
+
+            # Kafka
+            SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+            SPRING_KAFKA_CONSUMER_GROUP_ID: notify-worker-group
+
+            # MailHog
+            SPRING_MAIL_HOST: mailhog
+            SPRING_MAIL_PORT: 1025
+
+            # OpenTelemetry
+            OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+            OTEL_SERVICE_NAME: notify-worker
+        depends_on:
+            postgres:
+                condition: service_healthy
+            kafka:
+                condition: service_started
+            mailhog:
+                condition: service_started
+        volumes:
+            - notify-worker-logs:/app/logs
 
 volumes:
     gateway-logs:

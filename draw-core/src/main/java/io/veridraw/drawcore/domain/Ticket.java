@@ -13,7 +13,7 @@ import org.springframework.data.relational.core.mapping.Table;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table("tickets")
+@Table(name = "tickets")
 public class Ticket {
     @Id
     private UUID id;

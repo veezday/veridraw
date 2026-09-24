@@ -21,13 +21,12 @@ dependencies {
     runtimeOnly("org.postgresql:postgresql")
 
     // Kafka Reactive
-//    implementation("org.springframework.kafka:spring-kafka")
     implementation("org.springframework.boot:spring-boot-starter-kafka")
-//    implementation("io.projectreactor.kafka:reactor-kafka")
 
     // Lombok
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")
+    implementation("com.fasterxml.jackson.core:jackson-databind")
 
     // OpenTelemetry
     implementation("io.micrometer:micrometer-tracing-bridge-otel")
