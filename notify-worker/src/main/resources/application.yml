@@ -1,0 +1,62 @@
+server:
+    port: 8083
+
+spring:
+    application:
+        name: notify-worker
+
+    threads:
+        virtual:
+            enabled: true
+
+    kafka:
+        listener:
+            fetch-max-wait: 500
+            ack-mode: manual-immediate
+        consumer:
+            max-poll-records: 100
+            fetch-min-size: 1024
+            auto-offset-reset: earliest
+            enable-auto-commit: false
+            key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+            value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+        properties:
+            spring.json.value.default.type: io.veridraw.shared.event.DomainEvent
+            spring.json.trusted.packages: "io.veridraw.shared.event.*"
+
+
+    mail:
+        host: ${MAIL_HOST}
+        port: ${MAIL_PORT}
+        username: ${MAIL_USERNAME}
+        password: ${MAIL_PASSWORD}
+        properties:
+            mail:
+                smtp:
+                    auth: false
+                    starttls:
+                        enable: false
+    resilience4j:
+        retry:
+            instances:
+                emailSendRetry:
+                    maxAttempts: 3
+                    waitDuration: 2s
+                    enableExponentialBackoff: true
+                    exponentialBackoffMultiplier: 2
+                    retryExceptions:
+                        - org.springframework.mail.MailSendException
+                        - java.net.ConnectException
+
+    management:
+        endpoints:
+            web:
+                exposure:
+                    include: health,info,prometheus,metrics
+        endpoint:
+            health:
+                show-details: always
+        prometheus:
+            metrics:
+                export:
+                    enabled: true

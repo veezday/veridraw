@@ -1,6 +1,5 @@
 package io.veridraw.drawcore.service;
 
-import io.r2dbc.postgresql.codec.Json;
 import io.veridraw.drawcore.domain.Draw;
 import io.veridraw.drawcore.domain.DrawStatus;
 import io.veridraw.drawcore.domain.Ticket;
@@ -8,6 +7,8 @@ import io.veridraw.drawcore.event.OutboxEvent;
 import io.veridraw.drawcore.repository.DrawRepository;
 import io.veridraw.drawcore.repository.OutboxRepository;
 import io.veridraw.drawcore.repository.TicketRepository;
+import io.veridraw.shared.event.DomainEvent;
+import io.veridraw.shared.event.DrawCompletedEvent;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 @Slf4j
 @Service
@@ -26,6 +29,8 @@ public class DrawService {
     private final OutboxRepository outboxRepository;
 
     private final RandomNumberService randomNumberService;
+
+    private final ObjectMapper objectMapper;
 
     public Mono<Draw> createDraw(Draw draw) {
         log.info("Creating new draw: {}", draw.getName());
@@ -79,24 +84,27 @@ public class DrawService {
                                         draw.setUpdatedAt(Instant.now());
 
                                         return drawRepository.save(draw).flatMap(savedDraw -> {
-                                            // Публикуем событие через Outbox
-                                            String payload = String.format(
-                                                    "{\"drawId\":\"%s\",\"winnerEmail\":\"%s\",\"winnerName\":\"%s\",\"drawName\":\"%s\"}",
-                                                    savedDraw.getId(),
-                                                    winnerTicket.getParticipantEmail(),
-                                                    winnerTicket.getParticipantName(),
-                                                    savedDraw.getName());
+                                            DrawCompletedEvent event = DrawCompletedEvent.builder()
+                                                    .drawId(savedDraw.getId())
+                                                    .winnerEmail(winnerTicket.getParticipantEmail())
+                                                    .winnerName(winnerTicket.getParticipantName())
+                                                    .drawName(savedDraw.getName())
+                                                    .build();
 
-                                            OutboxEvent event = OutboxEvent.builder()
+                                            OutboxEvent outbox = OutboxEvent.builder()
                                                     .aggregateType("Draw")
                                                     .aggregateId(savedDraw.getId())
                                                     .eventType("DrawCompleted")
-                                                    .payload(Json.of(payload))
+                                                    .payload(event)
                                                     .createdAt(Instant.now())
                                                     .published(false)
                                                     .build();
 
-                                            return outboxRepository.save(event).thenReturn(savedDraw);
+                                            return outboxRepository
+                                                    .save(outbox)
+                                                    .doOnSuccess(e -> log.debug(
+                                                            "Outbox event saved for draw: {}", savedDraw.getId()))
+                                                    .thenReturn(savedDraw);
                                         });
                                     });
                         }));
@@ -112,5 +120,13 @@ public class DrawService {
                     draw.setUpdatedAt(Instant.now());
                     return drawRepository.save(draw).then(Mono.just(draw));
                 });
+    }
+
+    private String toJsonString(DomainEvent event) {
+        try {
+            return objectMapper.writeValueAsString(event);
+        } catch (JacksonException e) {
+            throw new IllegalStateException("Failed to serialize outbox event", e);
+        }
     }
 }
