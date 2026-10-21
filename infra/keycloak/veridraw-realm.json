@@ -6,7 +6,7 @@
   "accessCodeLifespan": 600,
   "users": [
     {
-      "id": "demo-user-id",
+      "id": "demo-user-id-1",
       "username": "demo-user",
       "enabled": true,
       "email": "demo-user@veridraw.local",
@@ -23,7 +23,7 @@
       "clientRoles": {}
     },
     {
-      "id": "demo-admin-id",
+      "id": "demo-admin-id-2",
       "username": "demo-admin",
       "enabled": true,
       "email": "demo-admin@veridraw.local",

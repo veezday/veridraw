@@ -1,0 +1,40 @@
+rate-limiter:
+    ip:
+        replenish-rate: 1  # request/sec
+        burst-capacity: 40  # burst request
+
+spring:
+    cloud:
+        gateway:
+            server:
+                webflux:
+                    routes:
+                        - id: draw-core
+                          uri: ${DRAW_CORE_URI:http://draw-core:8082}
+                          predicates:
+                              - Path=/api/draws/**,/api/tickets/**
+                          filters:
+                              - StripPrefix=0
+                              - name: CircuitBreaker
+                                args:
+                                    name: drawCoreCircuitBreaker
+                                    fallbackUri: forward:/fallback/draw-core
+
+                    discovery:
+                        locator:
+                            enabled: false
+                            lower-case-service-id: true
+
+                    default-filters:
+                        - name: RequestRateLimiter
+                          args:
+                              redis-rate-limiter.replenishRate: 1   # request/sec
+                              redis-rate-limiter.burstCapacity: 10  # burst request
+                              key-resolver: "#{@userKeyResolver}"
+
+                    x-forwarded:
+                        enabled: true
+                        for-enabled: true
+                        proto-enabled: true
+                        host-enabled: true
+                        port-enabled: true

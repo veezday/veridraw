@@ -23,3 +23,9 @@ scrape_configs:
             target_label: 'service'
           - action: labelmap
             regex: __meta_docker_container_label_(.+)
+
+      pipeline_stages:
+          - regex:
+              expression: 'trace_id=(?P<trace_id>[a-f0-9]{32})'
+          - labels:
+              trace_id: ""
