@@ -1,20 +1,24 @@
 server:
     port: 8081
 
+rate-limiter:
+    ip:
+        replenish-rate: 20  # request/sec
+        burst-capacity: 40  # burst request
+
 spring:
     application:
         name: gateway
 
-    # Cloud gateway
     cloud:
         gateway:
             server:
                 webflux:
                     routes:
                         - id: draw-core
-                          uri: http://draw-core:8082
+                          uri: ${DRAW_CORE_URI:http://draw-core:8082}
                           predicates:
-                            - Path=/api/draws/**, /api/tickets/**
+                            - Path=/api/draws,/api/draws/**,/api/tickets,/api/tickets/**
                           filters:
                             - StripPrefix=0
                             - name: CircuitBreaker
@@ -22,44 +26,53 @@ spring:
                                 name: drawCoreCircuitBreaker
                                 fallbackUri: forward:/fallback/draw-core
 
+                            - name: RequestRateLimiter
+                              args:
+                                 redis-rate-limiter.replenishRate: 5
+                                 redis-rate-limiter.burstCapacity: 10
+                                 key-resolver: "#{@userKeyResolver}"
+
                         - id: notify-worker
-                          uri: http://notify-worker:8083
+                          uri: ${NOTIFY_WORKER_URI:http://notify-worker:8083}
                           predicates:
-                            - Path=/api/notifications/**
+                            - Path=/api/inbox/**
                           filters:
                             - StripPrefix=0
+                            - name: CircuitBreaker
+                              args:
+                                name: notifyWorkerCircuitBreaker
+                                fallbackUri: forward:/fallback/notify-worker
+
+                            - name: RequestRateLimiter
+                              args:
+                                redis-rate-limiter.replenishRate: 5
+                                redis-rate-limiter.burstCapacity: 10
+                                key-resolver: "#{@userKeyResolver}"
 
                     discovery:
                         locator:
                             enabled: false
                             lower-case-service-id: true
 
-                    default-filters:
-                        # Add request ID for tracing
-                        - name: RequestRateLimiter
-                          args:
-                              redis-rate-limiter.replenishRate: 10  # 10 request/sec
-                              redis-rate-limiter.burstCapacity: 20  # Max 20 request
-                              key-resolver: "#{@ipKeyResolver}"
 
-                        # Add CORS headers
-                        - AddResponseHeader=X-Request-Id, ${random.uuid}
+                    x-forwarded:
+                        enabled: true
+                        for-enabled: true
+                        proto-enabled: true
+                        host-enabled: true
+                        port-enabled: true
 
-    # Security OAuth2
     security:
         oauth2:
             resourceserver:
                 jwt:
-                    issuer-uri: http://keycloak:8080/realms/veridraw
-                    jwk-set-uri: http://keycloak:8080/realms/veridraw/protocol/openid-connect/certs
+                    jwk-set-uri: ${ISSUER-URI:http://localhost:8080/realms/veridraw/protocol/openid-connect/certs}
 
-    # Redis rate limiting
     data:
         redis:
-            host: redis
-            port: 6379
+            host: ${REDIS_HOST:localhost}
+            port: ${REDIS_PORT:6379}
 
-# Actuator endpoints
 management:
     endpoints:
         web:
@@ -70,35 +83,22 @@ management:
             show-details: always
         gateway:
             enabled: true
-    prometheus:
-        metrics:
-            export:
+    metrics:
+        tags:
+            application: ${spring.application.name}
+        distribution:
+            percentiles-histogram:
+                http:
+                    server:
+                        requests: true
+                spring:
+                    cloud:
+                        gateway:
+                            requests: true
+        export:
+            prometheus:
                 enabled: true
 
-# OpenTelemetry
-otel:
-    service:
-        name: gateway
-    exporter:
-        otlp:
-            endpoint: http://otel-collector:4318
-            protocol: http/protobuf
-    logs:
-        exporter:
-            otlp:
-                enabled: true
-
-# Logging
 logging:
-    level:
-        root: INFO
-        io.veridraw: INFO
-        org.springframework.cloud.gateway: DEBUG
-        org.springframework.http.server.reactive: DEBUG
-        reactor.netty.http.client: DEBUG
-        org.springframework.security: INFO
-        org.springframework.security.authorization: TRACE
-        org.springframework.security.web.server.authorization: TRACE
-        reactor.core.publisher.Mono: DEBUG
     pattern:
-        console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+        console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - trace_id=%X{trace_id} span_id=%X{span_id} - %msg%n"

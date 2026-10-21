@@ -1,27 +1,30 @@
 server:
     port: 8082
 
+veridraw:
+    random:
+        api-key: ${VERIDRAW_RANDOM_API_KEY:-}
+        base-url: ${VERIDRAW_RANDOM_BASE_URL:-}
+        use-external-api: ${VERIDRAW_RANDOM_USE_EXTERNAL_API:false}
+
 spring:
     application:
         name: draw-core
 
-    # R2DBC (реактивная работа с PostgreSQL)
     r2dbc:
-        url: r2dbc:postgresql://postgres:5432/veridraw
-        username: veridraw
-        password: veridraw_password
+        url: r2dbc:postgresql://${DATABASE_URI:localhost:5432/draw_core}
+        username: ${DATABASE_USERNAME:veridraw}
+        password: ${DATABASE_PASSWORD:veridraw_password}
 
-    # Flyway для миграций (использует JDBC)
     flyway:
         enabled: true
-        url: jdbc:postgresql://postgres:5432/veridraw
-        user: veridraw
-        password: veridraw_password
+        url: jdbc:postgresql://${DATABASE_URI:localhost:5432/draw_core}
+        user: ${DATABASE_USERNAME:veridraw}
+        password: ${DATABASE_PASSWORD:veridraw_password}
         locations: classpath:db/migration
 
-    # Kafka
     kafka:
-        bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+        bootstrap-servers: ${KAFKA_URI:localhost:9092}
         producer:
             key-serializer: org.springframework.kafka.support.serializer.ToStringSerializer
             value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
@@ -31,50 +34,40 @@ spring:
             spring.json.value.default.type: io.veridraw.shared.event.DomainEvent
             spring.json.trusted.packages: "io.veridraw.shared.event.*"
 
-    # Security OAuth2
     security:
         oauth2:
             resourceserver:
                 jwt:
-                    issuer-uri: http://keycloak:8080/realms/veridraw
-                    jwk-set-uri: http://keycloak:8080/realms/veridraw/protocol/openid-connect/certs
+                    jwk-set-uri: ${ISSUER_URI:http://localhost:8080/realms/veridraw/protocol/openid-connect/certs}
 
-    # Actuator
-    management:
-        endpoints:
-            web:
-                exposure:
-                    include: health,info,prometheus,metrics
-        endpoint:
-            health:
-                show-details: always
-        prometheus:
-            metrics:
-                export:
-                    enabled: true
-
-# OpenTelemetry
-otel:
-    service:
-        name: draw-core
-    exporter:
-        otlp:
-            endpoint: http://otel-collector:4318
-            protocol: http/protobuf
-    logs:
-        exporter:
-            otlp:
+management:
+    endpoints:
+        web:
+            exposure:
+                include: health,info,prometheus,metrics
+    endpoint:
+        health:
+            show-details: always
+    metrics:
+        tags:
+            application: ${spring.application.name}
+        distribution:
+            percentiles-histogram:
+                http:
+                    server:
+                        requests: true
+                drawcore:
+                    random:
+                        org:
+                            request:
+                                duration: true
+                    outbox:
+                        publish:
+                            duration: true
+        export:
+            prometheus:
                 enabled: true
 
-# Logging
 logging:
-    level:
-        root: INFO
-        io.veridraw: DEBUG
-        org.springframework.r2dbc: DEBUG
-        org.flywaydb: DEBUG
-        org.springframework.boot.autoconfigure.flyway: DEBUG
-        org.springframework.data.r2dbc: DEBUG
-        io.r2dbc.postgresql.QUERY: DEBUG
     pattern:
-        console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+        console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - trace_id=%X{trace_id} span_id=%X{span_id} - %msg%n"

@@ -1,40 +1,36 @@
-plugins {
-    id("org.springframework.boot")
-}
-
 dependencies {
     implementation(project(":shared"))
 
+    // Gateway
     implementation("org.springframework.cloud:spring-cloud-starter-gateway-server-webflux")
-    implementation("org.springframework.cloud:spring-cloud-starter-loadbalancer")
-    implementation("org.springframework.boot:spring-boot-starter-security")
+
+    // Security
     implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
+
+    // Data
     implementation("org.springframework.boot:spring-boot-starter-data-redis-reactive")
-    implementation("org.springframework.boot:spring-boot-starter-micrometer-metrics")
-    runtimeOnly("io.micrometer:micrometer-registry-otlp")
+
+    // Resilience
     implementation("org.springframework.cloud:spring-cloud-starter-circuitbreaker-reactor-resilience4j")
+
+    // Observability
     implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("io.micrometer:micrometer-registry-prometheus")
 
-
+    // Utilities
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")
+    implementation("org.latencyutils:LatencyUtils:2.0.3")
 
+    // Testing
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.security:spring-security-test")
     testImplementation("io.projectreactor:reactor-test")
-}
 
-dependencyManagement {
-    imports {
-        mavenBom("org.springframework.cloud:spring-cloud-dependencies:2025.1.2")
-    }
-}
+    testImplementation("org.springframework.boot:spring-boot-testcontainers")
+    testImplementation("org.testcontainers:testcontainers-junit-jupiter")
 
-tasks.bootJar {
-    enabled = true
-    archiveFileName.set("gateway.jar")
-}
-
-tasks.jar {
-    enabled = false
+    testImplementation("org.springframework.boot:spring-boot-webtestclient")
+    testImplementation("com.redis:testcontainers-redis")
+    testImplementation("org.wiremock:wiremock-standalone")
 }

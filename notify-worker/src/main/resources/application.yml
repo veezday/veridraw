@@ -9,11 +9,26 @@ spring:
         virtual:
             enabled: true
 
+    datasource:
+        url: jdbc:postgresql://${DATABASE_URI:localhost:5432/notify_worker}
+        username: ${DATABASE_USERNAME:veridraw}
+        password: ${DATABASE_PASSWORD:veridraw_password}
+        driver-class-name: org.postgresql.Driver
+
+    flyway:
+        enabled: true
+        url: jdbc:postgresql://${DATABASE_URI:localhost:5432/notify_worker}
+        user: ${DATABASE_USERNAME:veridraw}
+        password: ${DATABASE_PASSWORD:veridraw_password}
+        locations: classpath:db/migration
+
     kafka:
         listener:
             fetch-max-wait: 500
             ack-mode: manual-immediate
+        bootstrap-servers: ${KAFKA_URI:kafka:9092}
         consumer:
+            group-id: ${KAFKA_CONSUMER_GROUP:notify-worker-group}
             max-poll-records: 100
             fetch-min-size: 1024
             auto-offset-reset: earliest
@@ -23,6 +38,12 @@ spring:
         properties:
             spring.json.value.default.type: io.veridraw.shared.event.DomainEvent
             spring.json.trusted.packages: "io.veridraw.shared.event.*"
+
+    security:
+        oauth2:
+            resourceserver:
+                jwt:
+                    jwk-set-uri: ${ISSUER_URI:http://localhost:8080/realms/veridraw/protocol/openid-connect/certs}
 
 
     mail:
@@ -48,15 +69,33 @@ spring:
                         - org.springframework.mail.MailSendException
                         - java.net.ConnectException
 
-    management:
-        endpoints:
-            web:
-                exposure:
-                    include: health,info,prometheus,metrics
-        endpoint:
-            health:
-                show-details: always
-        prometheus:
-            metrics:
-                export:
-                    enabled: true
+management:
+    endpoints:
+        web:
+            exposure:
+                include: health,info,prometheus,metrics
+    endpoint:
+        health:
+            show-details: always
+    metrics:
+        tags:
+            application: ${spring.application.name}
+        distribution:
+            percentiles-histogram:
+                http:
+                    server:
+                        requests: true
+                notify_worker:
+                    email:
+                        send:
+                            duration: true
+                    kafka:
+                        processing:
+                            duration: true
+        export:
+            prometheus:
+                enabled: true
+
+logging:
+    pattern:
+        console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - trace_id=%X{trace_id} span_id=%X{span_id} - %msg%n"

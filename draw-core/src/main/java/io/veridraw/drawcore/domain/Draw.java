@@ -8,8 +8,12 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Version;
 import org.springframework.data.relational.core.mapping.Table;
 
+/**
+ * Доменная сущность розыгрыша.
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -18,6 +22,9 @@ import org.springframework.data.relational.core.mapping.Table;
 public class Draw {
     @Id
     private UUID id;
+
+    @Version
+    private Long version;
 
     private String name;
     private String description;

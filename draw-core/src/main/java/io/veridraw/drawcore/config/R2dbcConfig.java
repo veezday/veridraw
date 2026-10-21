@@ -15,6 +15,11 @@ import org.springframework.data.r2dbc.dialect.DialectResolver;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
+/**
+ * Конфигурация кастомных преобразований Spring Data R2DBC.
+ * Регистрирует конвертеры для сериализации {@link DomainEvent} в {@link Json} при записи
+ * и десериализации при чтении из базы данных.
+ */
 @Configuration
 public class R2dbcConfig {
 

@@ -9,6 +9,9 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Table;
 
+/**
+ * Доменная сущность билета участника розыгрыша.
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -18,10 +21,13 @@ public class Ticket {
     @Id
     private UUID id;
 
+    /** Идентификатор розыгрыша, к которому относится билет. */
     private UUID drawId;
+    /** Имя участника. */
     private String participantName;
+    /** Email участника. */
     private String participantEmail;
 
-    private String status;
+    /** Момент покупки билета. */
     private Instant purchasedAt;
 }

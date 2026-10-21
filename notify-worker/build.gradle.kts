@@ -1,67 +1,54 @@
-plugins {
-    id("org.springframework.boot")
-}
-
 dependencies {
     implementation(project(":shared"))
 
-    // 1. Core & Concurrency: Java 21 Virtual Threads
-    // Senior-подход: для I/O-bound воркеров виртуальные потоки + стандартный Tomcat
-    // проще, производительнее и легче в дебаге, чем реактивный стек (WebFlux).
+    // MVC
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
 
-    // 2. Messaging: Kafka Consumer
-    // Для асинхронного получения событий (например, WinnerIdentifiedEvent)
+    // Security
+    implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
+
+    // Docs
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.1")
+
+    // Messaging
     implementation("org.springframework.boot:spring-boot-starter-kafka")
+
+    // Api
     implementation("org.springframework.boot:spring-boot-starter-mail")
 
-    // 3. Persistence: Idempotency & State Tracking
-    // Используем стандартный JDBC/JPA. С виртуальными потоками нет штрафа за блокировку,
-    // а транзакционная работа с таблицей идемпотентности (processed_events) гораздо проще, чем в R2DBC.
+    // Data
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+
+    // Migration
+    implementation("org.springframework.boot:spring-boot-starter-flyway")
     implementation("org.flywaydb:flyway-database-postgresql")
     runtimeOnly("org.postgresql:postgresql")
 
-    // 4. Resilience: Отказоустойчивость внешних вызовов
-    // Критически важно для воркера: внешние API (Telegram, SendGrid) часто отдают 429/500.
-    // Обеспечивает аннотации @Retry (с exponential backoff) и @CircuitBreaker.
+    // Resilence
     implementation("io.github.resilience4j:resilience4j-spring-boot4:2.4.0")
 
-    // 5. Observability: Tracing & Metrics
-    // Чтобы traceId из Kafka-сообщения пробрасывался в HTTP-запросы к внешним сервисам и в логи.
+    // Observability
     implementation("org.springframework.boot:spring-boot-starter-actuator")
-    implementation("io.micrometer:micrometer-tracing-bridge-otel")
-    implementation("io.opentelemetry:opentelemetry-exporter-otlp")
-    runtimeOnly("io.micrometer:micrometer-registry-otlp")
+    implementation("io.micrometer:micrometer-registry-prometheus")
 
-    // 6. Utilities
-    implementation("org.springframework.boot:spring-boot-starter-validation") // Для @Valid на ConfigurationProperties
+    // Utilities
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")
-    implementation("com.fasterxml.jackson.core:jackson-databind")
+    implementation("org.springframework.boot:spring-boot-starter-validation")
+    implementation("org.latencyutils:LatencyUtils:2.0.3")
 
-    // 7. Testing: Интеграционные тесты на реальных зависимостях
+    // Testing
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework.boot:spring-boot-webmvc-test")
+    testImplementation("org.springframework.security:spring-security-test")
+
+    testImplementation("org.springframework.boot:spring-boot-testcontainers")
+    testImplementation("org.testcontainers:testcontainers-postgresql")
+    testImplementation("org.testcontainers:testcontainers-junit-jupiter")
+    testImplementation("org.testcontainers:testcontainers-kafka")
     testImplementation("org.springframework.kafka:spring-kafka-test")
 
-    // Testcontainers: Junior мокает Kafka и БД, Senior поднимает реальные контейнеры в тестах.
-    testImplementation("org.testcontainers:junit-jupiter")
-    testImplementation("org.testcontainers:postgresql")
-    testImplementation("org.testcontainers:kafka")
-}
-
-dependencyManagement {
-    imports {
-        mavenBom("org.springframework.cloud:spring-cloud-dependencies:2025.1.2")
-    }
-}
-
-tasks.bootJar {
-    enabled = true
-    archiveFileName.set("notify-worker.jar")
-}
-
-tasks.jar {
-    enabled = false
+    testImplementation("org.springframework.boot:spring-boot-webtestclient")
+    testImplementation("org.awaitility:awaitility")
 }
