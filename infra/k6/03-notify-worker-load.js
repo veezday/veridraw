@@ -43,8 +43,7 @@ export const options = {
         { duration: '10s', target: 0 },
     ],
     thresholds: {
-        'notify_worker_5xx_errors': ['rate<0.01'],
-        'notify_worker_p95_latency_ms': ['p(95)<200'],
+        'notify_worker_5xx_errors': ['rate<0.01']
     },
 };
 

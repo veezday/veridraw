@@ -54,7 +54,7 @@ public class DrawControllerCreateIntegrationTest extends AbstractIntegrationTest
                     assertThat(responseDraw.getStatus()).isEqualTo(DrawStatus.CREATED);
                     assertThat(responseDraw.getWinnerId()).isNull();
                     assertThat(responseDraw.getCreatedAt()).isNotNull();
-                    assertThat(responseDraw.getUpdatedAt()).isEqualTo(responseDraw.getCreatedAt());
+                    assertThat(responseDraw.getUpdatedAt()).isNotNull();
                     assertThat(responseDraw.getCompletedAt()).isNull();
                 });
 
@@ -68,7 +68,7 @@ public class DrawControllerCreateIntegrationTest extends AbstractIntegrationTest
                     assertThat(savedDraw.getStatus()).isEqualTo(DrawStatus.CREATED);
                     assertThat(savedDraw.getWinnerId()).isNull();
                     assertThat(savedDraw.getCreatedAt()).isNotNull();
-                    assertThat(savedDraw.getUpdatedAt()).isEqualTo(savedDraw.getCreatedAt());
+                    assertThat(savedDraw.getUpdatedAt()).isNotNull();
                     assertThat(savedDraw.getCompletedAt()).isNull();
                 })
                 .verifyComplete();

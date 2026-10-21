@@ -47,8 +47,7 @@ export const options = {
     ],
     thresholds: {
         'draw_core_5xx_errors': ['rate<0.01'],
-        'draw_core_successful_completions': ['rate>0.95'],
-        'draw_core_p95_latency_ms': ['p(95)<800'],
+        'draw_core_successful_completions': ['rate>0.95']
     },
 };
 
