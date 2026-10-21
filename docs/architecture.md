@@ -138,9 +138,9 @@ flowchart LR
     Otel --> Jaeger
     Promtail --> Loki
     
-    classDef source fill:#f9f9f9,stroke:#333,stroke-width:1px;
-    classDef agent fill:#e1f5fe,stroke:#0288d1,stroke-width:1px;
-    classDef storage fill:#e8f5e9,stroke:#388e3c,stroke-width:2px;
+    classDef source fill:#696969,stroke:#333,stroke-width:1px;
+    classDef agent fill:#696969,stroke:#0288d1,stroke-width:1px;
+    classDef storage fill:#696969,stroke:#388e3c,stroke-width:2px;
     class Sources source;
     class Agents agent;
     class Storage storage;
